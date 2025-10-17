@@ -228,17 +228,17 @@ void SecondApp::loadGameObjects() {
     blue.transform.scale = {.05f, .05f, 0.f};
     blue.transform.translation = {.5f, .5f, 0.f};
     blue.color = {0.f, 0.f, 1.f};
-    blue.rigidBody.velocity = {-.5f, .0f, 0.f};
+    blue.rigidBody.velocity = {-.05f, .0f, 0.f};
     blue.model = circle;
-    //physicsObjects.push_back(std::ref(blue));
+    physicsObjects.push_back(std::ref(blue));
 
     auto& red = gameObjectManager.createGameObject();
     red.transform.scale = {.05f, .05f, 0.f};
     red.transform.translation = {-.45f, -.25f, 0.f};
     red.color = {1.f, 0.f, 0.f};
-    red.rigidBody.velocity = {.5f, .0f, 0.f};
+    red.rigidBody.velocity = {.05f, .0f, 0.f};
     red.model = circle;
-    //physicsObjects.push_back(std::ref(red));
+    physicsObjects.push_back(std::ref(red));
 
     // create vector field
     const int gridCount = 30;
@@ -253,9 +253,9 @@ void SecondApp::loadGameObjects() {
         };
         vf.transform.rotation = {1.5f, 0.f, 0.f};
         vf.color = {
-          1.f,
-          1.f,
-          1.f,
+          0.f,
+          128.f,
+          0.f,
         };
         vf.model = square;
         vectorField.push_back(std::ref(vf));

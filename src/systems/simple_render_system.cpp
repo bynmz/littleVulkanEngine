@@ -5,12 +5,7 @@ namespace lve {
 struct SimplePushConstantData {
   glm::mat4 modelMatrix{1.f};
   glm::mat4 normalMatrix{1.f};
-};
-
-struct PushConstantData {
-  glm::vec2 offset;
   alignas(16) glm::vec3 color;
-  glm::mat2 transform{1.f};
 };
 
 SimpleRenderSystem::SimpleRenderSystem(
@@ -65,8 +60,8 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass) {
   pipelineConfig.pipelineLayout = pipelineLayout;
   lvePipeline = std::make_unique<LvePipeline>(
       lveDevice,
-      "shaders/simple_shader.vert.spv",
-      "shaders/simple_shader.frag.spv",
+      "shaders/simple_2dshader.vert.spv",
+      "shaders/simple_2dshader.frag.spv",
       pipelineConfig);
 }
 
@@ -130,6 +125,7 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo) {
     SimplePushConstantData push{};
     push.modelMatrix = obj.transform.mat4();
     push.normalMatrix = obj.transform.normalMatrix();
+    push.color = obj.color;
 
     vkCmdPushConstants(
         frameInfo.commandBuffer,

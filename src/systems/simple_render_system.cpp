@@ -1,21 +1,16 @@
 #include "simple_render_system.hpp"
 
-// libs
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
-
-// std
-#include <array>
-#include <cassert>
-#include <stdexcept>
-
 namespace lve {
 
 struct SimplePushConstantData {
   glm::mat4 modelMatrix{1.f};
   glm::mat4 normalMatrix{1.f};
+};
+
+struct PushConstantData {
+  glm::vec2 offset;
+  alignas(16) glm::vec3 color;
+  glm::mat2 transform{1.f};
 };
 
 SimpleRenderSystem::SimpleRenderSystem(
@@ -35,7 +30,19 @@ void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLay
   pushConstantRange.offset = 0;
   pushConstantRange.size = sizeof(SimplePushConstantData);
 
-  std::vector<VkDescriptorSetLayout> descriptorSetLayouts{globalSetLayout};
+  renderSystemLayout =
+      LveDescriptorSetLayout::Builder(lveDevice)
+          .addBinding(
+              0, 
+              VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
+              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+          /*.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)*/
+          .build();
+
+  std::vector<VkDescriptorSetLayout> descriptorSetLayouts{
+      globalSetLayout,
+      renderSystemLayout->getDescriptorSetLayout()
+  };
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -76,9 +83,50 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo) {
       0,
       nullptr);
 
+  // Create a map to cache descriptor sets for each game object
+  std::unordered_map<LveGameObject*, VkDescriptorSet> cachedDescriptorSets;
+
   for (auto& kv : frameInfo.gameObjects) {
     auto& obj = kv.second;
     if (obj.model == nullptr) continue;
+
+    // Check if the descriptor set for this object is already cached
+    auto it = cachedDescriptorSets.find(&obj);
+    if (it != cachedDescriptorSets.end()) {
+      // If cached, bind the cached descriptor set
+      vkCmdBindDescriptorSets(
+          frameInfo.commandBuffer,
+          VK_PIPELINE_BIND_POINT_GRAPHICS,
+          pipelineLayout,
+          1,
+          1,
+          &it->second,
+          0,
+          nullptr);
+    } else {
+      // If not cached, create a new descriptor set and cache it
+      auto bufferInfo = obj.getBufferInfo(frameInfo.frameIndex);
+      
+      VkDescriptorSet gameObjectDescriptorSet;
+      LveDescriptorWriter(*renderSystemLayout, frameInfo.frameDescriptorPool)
+          .writeBuffer(0, &bufferInfo)
+          /*.writeImage(1, &diffuseMapInfo)*/
+          .build(gameObjectDescriptorSet);
+
+      cachedDescriptorSets[&obj] = gameObjectDescriptorSet;
+
+      // Bind the newly created descriptor set
+      vkCmdBindDescriptorSets(
+          frameInfo.commandBuffer,
+          VK_PIPELINE_BIND_POINT_GRAPHICS,
+          pipelineLayout,
+          1,
+          1,
+          &gameObjectDescriptorSet,
+          0,
+          nullptr);
+    }
+    
     SimplePushConstantData push{};
     push.modelMatrix = obj.transform.mat4();
     push.normalMatrix = obj.transform.normalMatrix();

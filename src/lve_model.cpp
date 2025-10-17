@@ -165,11 +165,17 @@ void LveModel::Builder::loadModel(const std::string &filepath) {
             attrib.vertices[3 * index.vertex_index + 2],
         };
 
-        vertex.color = {
-            attrib.colors[3 * index.vertex_index + 0],
-            attrib.colors[3 * index.vertex_index + 1],
-            attrib.colors[3 * index.vertex_index + 2],
-        };
+        // Only access colors if they exist in the OBJ file
+        if (attrib.colors.size() > 0) {
+          vertex.color = {
+              attrib.colors[3 * index.vertex_index + 0],
+              attrib.colors[3 * index.vertex_index + 1],
+              attrib.colors[3 * index.vertex_index + 2],
+          };
+        } else {
+          // Default to white if no color data
+          vertex.color = {1.0f, 1.0f, 1.0f};
+        }
       }
 
       if (index.normal_index >= 0) {

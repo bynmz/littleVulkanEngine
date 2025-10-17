@@ -1,5 +1,5 @@
 
-#include "first_app.hpp"
+#include "second_app.h"
 
 // std
 #include <cstdlib>
@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 int main() {
-  lve::FirstApp app{};
+  lve::SecondApp app{};
 
   try {
     app.run();

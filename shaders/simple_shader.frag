@@ -51,6 +51,7 @@ void main() {
     blinnTerm = pow(blinnTerm, 512.0); // higher values -> sharper highlight
     specularLight += intensity * blinnTerm;
   }
-  
-  outColor = vec4(diffuseLight * fragColor + specularLight * fragColor, 1.0);
+
+  // Specular should not be multiplied by surface color
+  outColor = vec4(diffuseLight * fragColor + specularLight, 1.0);
 }
